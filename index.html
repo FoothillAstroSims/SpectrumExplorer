@@ -297,14 +297,18 @@
 
     function drawAbsorption() {
         
+        if (luminosityClass == "I") {
+            linewidth = 3;
+        } else if (luminosityClass == "III") {
+            linewidth = 5;
+        } else {
+            linewidth = 7;
+        }
+        
         context.globalAlpha = 1.0;
         for (var i = 0; i < spectrumOn.length; i++) {
             if (spectrumOn[i] == 1) {
                 alphaInfo = spectrumData[i].alpha;
-                //console.log(alphaInfo, temperature, (alphaInfo[1] - temperature),  Math.pow((alphaInfo[1] - temperature),2), Math.pow(alphaInfo[2],2));
-                var bTerm = (alphaInfo[1] - temperature);
-                var bTermSquared = Math.pow(bTerm);
-                var cTerm
                 var calcAlpha = Math.exp(-1.0 * Math.pow((alphaInfo[1] - temperature),2) / (2 * Math.pow(alphaInfo[2],2)));
                 //console.log(calcAlpha);
                 context.globalAlpha = calcAlpha;
@@ -312,7 +316,7 @@
                 
                 spectrum = spectrumData[i].wavelength;
                 for (var j = 0; j < spectrum.length; j++) {
-                    context.lineWidth = 3;
+                    context.lineWidth = linewidth;
                     lineColor = "black";
                     context.strokeStyle  = lineColor;
                     context.beginPath();
