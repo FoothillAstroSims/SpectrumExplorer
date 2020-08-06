@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  
+  <title>Spectrum Explorer</title>
+    
+    <style>
+        .checkboxes {
+            border: 5px outset black;
+            background-color: lightblue;
+            text-align: left;
+            float:left;
+        }
+        .full-width {
+            width:100%;
+            float:left;
+        }
+    </style>
+    
+</head>
+
+<body style="font-family:sans-serif; font-size:15px; width:700px; margin-left:auto; margin-right:auto;">
+<center>
+<h3><a href="https://foothill.edu/astronomy/astrosims.html" target=_blank>AstroSims</a> > Spectrum Explorer</h3>
+    
+    <canvas id="spectrumDisplay" width="700" height="440"></canvas>
+    
+    <div id="controlBar" class="full-width">
+    <div id="emissionCheckboxes" class="checkboxes">Show emission spectrum for:
+        <ul>
+            <li><input type="checkbox" id="Hspectra" value="Hydrogen" onclick="elementChoice = 0; updateEmission();">Hydrogen</li>
+            <li><input type="checkbox" id="Hespectra" value="Helium" onclick="elementChoice = 1; updateEmission();">Helium</li>
+            <li><input type="checkbox" id="Lispectra" value="Lithium" onclick="elementChoice = 4; updateEmission();">Lithium</li>
+            <li><input type="checkbox" id="Naspectra" value="Sodium" onclick="elementChoice = 2; updateEmission();">Sodium</li>
+            <li><input type="checkbox" id="Hgspectra" value="Mercury" onclick="elementChoice = 3; updateEmission();">Mercury</li>
+            <li><input type="checkbox" id="Nespectra" value="Neon" onclick="elementChoice = 5; updateEmission();">Neon</li>
+        </ul>
+   </div>
+    
+    <div id="absorptionCheckboxes" class="checkboxes">Show absorption spectrum for:
+        <ul>
+            <li><input type="checkbox" id="Hspectra" value="Hydrogen" onclick="elementChoice = 0; updateAbsorption();">Hydrogen</li>
+            <li><input type="checkbox" id="Hespectra" value="Helium" onclick="elementChoice = 1; updateAbsorption();">Helium</li>
+            <li><input type="checkbox" id="Lispectra" value="Lithium" onclick="elementChoice = 4; updateAbsorption();">Lithium</li>
+            <li><input type="checkbox" id="Naspectra" value="Sodium" onclick="elementChoice = 2; updateAbsorption();">Sodium</li>
+            <li><input type="checkbox" id="Hgspectra" value="Mercury" onclick="elementChoice = 3; updateAbsorption();">Mercury</li>
+            <li><input type="checkbox" id="Nespectra" value="Neon" onclick="elementChoice = 5; updateAbsorption();">Neon</li>
+        </ul>
+   </div>
+    </div>
+
+
+</center>
+
+    
+  <script>
+      // Original code from Andrew Duffy
+      
+      // define the drawing canvas
+      var canvas = document.getElementById("spectrumDisplay");
+      var context = canvas.getContext("2d");
+      var xBase = 50;     // left edge of spectra 
+      var yBase = 350;     // y base for the emission spectra
+      var yVisSpec = 150;   // for the continuous visible light spectrum
+
+      // define global variables
+      var lineColor = 'red';
+      var elementChoice = 0;
+      var spectrumData = new Array();
+      var emissionOn = new Array();
+      var absorptionOn = new Array();
+ 
+      // initialize underlying data and the display
+      initializeSpectrumData();
+      initializeDisplay();
+      
+    function initializeSpectrumData(){
+                      
+          var i = 0;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Hydrogen";
+          spectrumData[i].wavelength = [410.2, 434.0, 486.1, 656.3];
+          
+          i = 1;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Helium";
+          spectrumData[i].wavelength = [447.1, 471.3, 492.2, 501.6, 587.6, 667.8];
+
+          i = 2;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Sodium";
+          spectrumData[i].wavelength = [439.3, 445.5, 449.1, 589, 589.6];
+
+          i = 3;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Mercury";
+          spectrumData[i].wavelength = [408, 435.8, 546.1, 577, 579.1];
+
+          i = 4;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Lithium";
+          spectrumData[i].wavelength = [468, 479, 548.4, 610.3, 670.8];
+
+          i = 5;
+          spectrumData[i] = {};
+          spectrumData[i].name = "Neon";
+          spectrumData[i].wavelength = [540.1, 585.2, 588.2, 603, 607.4, 616.4, 621.7, 626.6, 633.4, 638.3, 640.2, 650.6, 659.9, 692.9];
+          
+          // to add more elements, just copy one of the blocks from above, update i, name, and wavelengths
+
+          // set all elements to OFF for emission and absorption
+          for (var i = 0; i < spectrumData.length; i++) {
+              emissionOn[i] = 0;
+              absorptionOn[i] = 0;
+          }
+
+          //console.log(spectrumData);
+          //console.log(emissionOn);
+      }
+
+    function initializeDisplay() {
+          // set background color for the entire thing
+           context.fillStyle = "black";
+           context.fillRect(0, 0, canvas.width, canvas.height);
+
+          context.lineWidth = 2;
+          context.strokeStyle  = "white";
+          context.font = '14pt Calibri';
+          context.fillStyle = "white";
+
+        // draw an axis
+           context.beginPath();
+           context.moveTo(xBase, yVisSpec);
+           context.lineTo(xBase+600, yVisSpec);
+           context.stroke();
+ 
+         // draw and label the tick marks
+
+         for (var i = 0; i <= 6; i++) {
+           context.beginPath();
+           context.moveTo(xBase+i*100, yVisSpec);
+           context.lineTo(xBase+i*100, yVisSpec+10);
+           context.stroke();
+           context.textAlign = 'center';
+           context.textBaseline = 'middle';
+           var axisValue = 400+50*i;
+           var axisLabel = axisValue.toFixed(0);
+           context.fillText(axisLabel, xBase+i*100, yVisSpec+20);
+
+          }
+           context.font = '18pt Calibri';
+           context.fillText("Wavelength (nm)", 0.5*canvas.width, yVisSpec+44);
+           context.fillText("Continuous spectrum, visible light", 0.5*canvas.width, 50);
+
+          drawVisible();
+
+          yBase = 355;
+
+          context.lineWidth = 2;
+          context.strokeStyle  = "white";
+          context.font = '14pt Calibri';
+          context.fillStyle = "white";
+
+         // draw an axis for the emission spectrum
+           context.beginPath();
+           context.moveTo(xBase, yBase);
+           context.lineTo(xBase+600, yBase);
+           context.stroke();
+
+         // draw and label the tick marks
+
+         for (var i = 0; i <= 6; i++) {
+           context.beginPath();
+           context.moveTo(xBase+i*100, yBase);
+           context.lineTo(xBase+i*100, yBase+10);
+           context.stroke();
+           context.textAlign = 'center';
+           context.textBaseline = 'middle';
+           var axisValue = 400+50*i;
+           var axisLabel = axisValue.toFixed(0);
+           context.fillText(axisLabel, xBase+i*100, yBase+20);
+
+          }
+           context.font = '18pt Calibri';
+           context.fillText("Wavelength (nm)", 0.5*canvas.width, yBase+44);
+    
+
+    }
+      
+    function drawVisible() {
+        context.fillStyle = "black";
+        context.fillRect(xBase, yVisSpec,600, -80);
+        context.lineWidth = 1;
+
+         // wavelength from 400 to 700 nm, draw the visible spectrum
+         for (var i = 0; i <= 600; i++) {
+           var wavelength = 400 + 0.5*i;
+           lineColor = getLineColor(wavelength);
+           context.strokeStyle  = lineColor;
+           context.beginPath();
+           context.moveTo(xBase+i, yVisSpec);
+           context.lineTo(xBase+i, yVisSpec-80);
+           context.stroke();
+          }
+
+    }
+      
+    function drawEmission() {
+        
+        context.fillStyle = "black";
+        context.fillRect(xBase, yBase,600, -80);
+    
+         for (var i = 0; i < emissionOn.length; i++) {
+            if (emissionOn[i] == 1) {
+                spectrum = spectrumData[i].wavelength;
+                for (var j = 0; j < spectrum.length; j++) {
+                    context.lineWidth = 3;
+                    lineColor = getLineColor(spectrum[j]);
+                    context.strokeStyle  = lineColor;
+                    context.beginPath();
+                    context.moveTo(xBase+2*(spectrum[j]-400), yBase-2);
+                    context.lineTo(xBase+2*(spectrum[j]-400), yBase-80);
+                    context.stroke();
+                } 
+            }
+        }
+    }
+
+    function drawAbsorption() {
+        // streamlined version of plotting code from Andrew Duffy
+        
+        for (var i = 0; i < absorptionOn.length; i++) {
+            if (absorptionOn[i] == 1) {
+                spectrum = spectrumData[i].wavelength;
+                for (var j = 0; j < spectrum.length; j++) {
+                    context.lineWidth = 3;
+                    lineColor = "black";
+                    context.strokeStyle  = lineColor;
+                    context.beginPath();
+                    context.moveTo(xBase+2*(spectrum[j]-400), yVisSpec-2);
+                    context.lineTo(xBase+2*(spectrum[j]-400), yVisSpec-80);
+                    context.stroke();
+                } 
+            }
+        }
+    }
+
+    function updateAbsorption() {
+        if (absorptionOn[elementChoice] == 0) {
+            absorptionOn[elementChoice] = 1;
+        } else {
+            absorptionOn[elementChoice] = 0;
+        }
+        
+        drawVisible();
+        drawAbsorption();
+    }
+        
+    function updateEmission() {
+        if (emissionOn[elementChoice] == 0) {
+            emissionOn[elementChoice] = 1;
+        } else {
+            emissionOn[elementChoice] = 0;
+        }
+        
+        drawEmission();
+    }
+      
+    function getLineColor(lambda) {
+        // original routine from Andrew Duffy
+        var redness = 0;
+        if (lambda <= 500) redness = Math.floor(160-160*(lambda-400)/100);
+        if ((lambda >= 558) && (lambda < 590))redness = Math.floor(255-255*(590-lambda)*(590-lambda)/(32*32));
+        if (lambda >= 590) redness = 255;
+        if (lambda >= 650) redness = Math.floor(255-2*(lambda-650));
+
+        var redString = redness.toString(16);
+        if (redString.length == 1) redString = "0"+redString;
+        var greenness = 0;
+        if ((lambda > 460) && (lambda < 500)) greenness = Math.floor(255 - 255*(500 - lambda)*(500-lambda)/1600);
+        if ((lambda >= 500) && (lambda <=  570))    greenness = 255;
+        if ((lambda > 570) && (lambda <=  640))    greenness = Math.floor(255-255*(lambda-570)*(lambda-570)/(70*70));
+        var greenString = greenness.toString(16);
+        if (greenString.length == 1) greenString = "0"+greenString;
+        var blueness = 0;
+        if (lambda < 460) blueness = 255;
+        if ((lambda >= 460) && (lambda < 550)) blueness = Math.floor(255 - 255*(lambda-460)*(lambda-460)/(90*90));
+        var blueString = blueness.toString(16);
+        if (blueString.length == 1) blueString = "0"+blueString;
+//        console.log(lambda + " " + redness + " " + greenness + " " +blueness);
+        var newlineColor = "#" + redString+greenString+blueString;
+        return newlineColor;
+
+    }
+
+  </script>
+
+   
+    
+
+    <div id="explanatoryText" class="bodyText">
+        <p>Based on the <a href="http://physics.bu.edu/~duffy/HTML5/emission_spectra.html">Emission Spectra</a> Javascript simulation by Andrew Duffy</p>
+
+        <p> This is a quick proof of concept of adapting Andrew Duffy's code, as a first step towards making a full blown reimplementation of the original <a href="https://astro.unl.edu/classaction/animations/light/spectrum010.html">NAAP spectrum explorer</a>.  </p>
+        
+        <p> This simulator is part of the <a href="https://foothill.edu/astronomy/astrosims.html" target=_blank>Foothill AstroSims</a> project, which is aiming to reimplement, in HTML5, Flash-based simulations that are used in Foothill Astronomy courses, as well as developing new simulations covering topics previously unaddressed by Astro-education simulations.</p>
+    
+        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="./Emission Spectra_files/88x31.png"></a>
+        
+        <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+    
+    </div>
+
+</p></body></html>
