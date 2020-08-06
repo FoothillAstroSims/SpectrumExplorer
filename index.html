@@ -5,8 +5,8 @@
   <title>Spectrum Explorer</title>
     
     <style>
-        .checkboxes {
-            border: 5px outset black;
+        .inputs {
+            border: 5px outset red;
             background-color: lightblue;
             text-align: left;
             float:left;
@@ -23,30 +23,52 @@
 <center>
 <h3><a href="https://foothill.edu/astronomy/astrosims.html" target=_blank>AstroSims</a> > Spectrum Explorer</h3>
     
-    <canvas id="spectrumDisplay" width="700" height="440"></canvas>
+    <canvas id="spectrumDisplay" width="700" height="220"></canvas>
     
-    <div id="controlBar" class="full-width">
-    <div id="emissionCheckboxes" class="checkboxes">Show emission spectrum for:
-        <ul>
-            <li><input type="checkbox" id="Hspectra" value="Hydrogen" onclick="elementChoice = 0; updateEmission();">Hydrogen</li>
-            <li><input type="checkbox" id="Hespectra" value="Helium" onclick="elementChoice = 1; updateEmission();">Helium</li>
-            <li><input type="checkbox" id="Lispectra" value="Lithium" onclick="elementChoice = 4; updateEmission();">Lithium</li>
-            <li><input type="checkbox" id="Naspectra" value="Sodium" onclick="elementChoice = 2; updateEmission();">Sodium</li>
-            <li><input type="checkbox" id="Hgspectra" value="Mercury" onclick="elementChoice = 3; updateEmission();">Mercury</li>
-            <li><input type="checkbox" id="Nespectra" value="Neon" onclick="elementChoice = 5; updateEmission();">Neon</li>
-        </ul>
-   </div>
-    
-    <div id="absorptionCheckboxes" class="checkboxes">Show absorption spectrum for:
-        <ul>
-            <li><input type="checkbox" id="Hspectra" value="Hydrogen" onclick="elementChoice = 0; updateAbsorption();">Hydrogen</li>
-            <li><input type="checkbox" id="Hespectra" value="Helium" onclick="elementChoice = 1; updateAbsorption();">Helium</li>
-            <li><input type="checkbox" id="Lispectra" value="Lithium" onclick="elementChoice = 4; updateAbsorption();">Lithium</li>
-            <li><input type="checkbox" id="Naspectra" value="Sodium" onclick="elementChoice = 2; updateAbsorption();">Sodium</li>
-            <li><input type="checkbox" id="Hgspectra" value="Mercury" onclick="elementChoice = 3; updateAbsorption();">Mercury</li>
-            <li><input type="checkbox" id="Nespectra" value="Neon" onclick="elementChoice = 5; updateAbsorption();">Neon</li>
-        </ul>
-   </div>
+    <div id="controlBar" class="full-width" align=center>
+        <div id="spectrumTypeSelection" class="inputs">
+            <h3 align=center>Spectrum</h3>
+            <input type="radio" id="continuous" name="spectrumType" value="continuous" onclick="updateSpectrum();">
+            <label for="continuous">Continuous</label><br>
+            <input type="radio" id="emission" name="spectrumType" value="emission" onclick="updateSpectrum();">
+            <label for="emission">Emission</label><br>
+            <input type="radio" id="absorption" name="spectrumType" value="absorption" onclick="updateSpectrum();">
+            <label for="absorption">Absorption</label>
+        </div>
+        
+        <div id="elementCheckboxes" class="inputs">
+            <h3 align=center>Elements</h3>
+            <div id="elementCheckboxes1" class="checkboxes">
+                <input type="checkbox" id="HeIIspectra" value="Ionized Helium" onclick="updateSpectrum();">Ionized Helium<br>
+                <input type="checkbox" id="Hespectra" value="Helium" onclick="updateSpectrum();">Helium<br>
+                <input type="checkbox" id="Hspectra" value="Hydrogen" onclick="updateSpectrum();">Hydrogen<br>
+            </div>
+        
+            <div id="elementCheckboxes2" class="inputs">
+                <input type="checkbox" id="ZIIspectra" value="Ionized Metals" onclick="updateSpectrum();">Ionized Metals<br>
+                <input type="checkbox" id="Zspectra" value="Metals" onclick=" updateSpectrum();">Metals<br>
+                <input type="checkbox" id="MolSpectra" value="Molecules" onclick="updateSpectrum();">Molecules<br>
+            </div>
+        </div>
+        
+        <div id="luminosityClassSelection" class = "inputs">
+            <h3 align=center>Luminosity Class</h3>
+            <input type="radio" id="I" name="luminosityClass" value="I" onclick="updateSpectrum();">
+            <label for="I">I</label><br>
+            <input type="radio" id="III" name="luminosityClass" value="III" onclick="updateSpectrum();">
+            <label for="III">III</label><br>
+            <input type="radio" id="V" name="luminosityClass" value="V" onclick="updateSpectrum();" checked>
+            <label for="V">V</label>
+
+        </div>
+        <div id="spectralTypeSelection" class="inputs">
+            <h3 align=center>Spectral Type</h3>
+            <input type=text id='SpTDisplay' value="G2">
+            <input type=text id='classDisplay' value="V">
+            <input type=text id='temperatureDisplay' value="5800">
+            <input type="range" min="0" max="69" value="52" class="slider" id="spectralTypeNum" oninput="updateSpectrum();">
+        </div>
+        
     </div>
 
 
@@ -54,25 +76,37 @@
 
     
   <script>
-      // Original code from Andrew Duffy
-      
       // define the drawing canvas
       var canvas = document.getElementById("spectrumDisplay");
       var context = canvas.getContext("2d");
       var xBase = 50;     // left edge of spectra 
-      var yBase = 350;     // y base for the emission spectra
-      var yVisSpec = 150;   // for the continuous visible light spectrum
+      var yBase = 150;     // y base for the emission spectra
+      //var yVisSpec = 150;   // for the continuous visible light spectrum
 
       // define global variables
       var lineColor = 'red';
-      var elementChoice = 0;
-      var spectrumData = new Array();
-      var emissionOn = new Array();
-      var absorptionOn = new Array();
+      //var spectrumType = 'continuous';
+      spectrumData = new Array();
+      var spectrumOn = new Array();
+      var spectrumAlpha = new Array();
+      var SpTLumTemp = new Array();
+      var spectrumType = 'G2';
+      var temperature = 5800;
+      var luminosityClass = 'V';
  
+      document.getElementById("continuous").checked = true;
+      spectrumType = document.querySelector('input[name="spectrumType"]:checked').value;
+      //console.log(spectrumType);
+      
       // initialize underlying data and the display
       initializeSpectrumData();
+      initializeSpTLumTemp();
       initializeDisplay();
+      
+      //for (var i=0; i < spectrumData.length; i++) {
+      //   console.log(spectrumData[i].name);
+      //}
+
       
     function initializeSpectrumData(){
                       
@@ -80,43 +114,66 @@
           spectrumData[i] = {};
           spectrumData[i].name = "Hydrogen";
           spectrumData[i].wavelength = [410.2, 434.0, 486.1, 656.3];
+          spectrumData[i].alpha = [1.0, 9500.0, 1000.0];
           
           i = 1;
           spectrumData[i] = {};
           spectrumData[i].name = "Helium";
           spectrumData[i].wavelength = [447.1, 471.3, 492.2, 501.6, 587.6, 667.8];
+          spectrumData[i].alpha = [1.0, 30000.0, 10000.0];
 
           i = 2;
           spectrumData[i] = {};
-          spectrumData[i].name = "Sodium";
-          spectrumData[i].wavelength = [439.3, 445.5, 449.1, 589, 589.6];
+          spectrumData[i].name = "Ionized Helium";
+          spectrumData[i].wavelength = [436.6, 454.1, 468.6];
+          spectrumData[i].alpha = [1.0, 45000.0, 10000.0];
 
           i = 3;
           spectrumData[i] = {};
-          spectrumData[i].name = "Mercury";
-          spectrumData[i].wavelength = [408, 435.8, 546.1, 577, 579.1];
+          spectrumData[i].name = "Ionized Metals";
+          spectrumData[i].wavelength = [407.7, 412.8, 426.8, 427.6, 428.8, 448.1, 451.6];
+          spectrumData[i].alpha = [1, 7000, 1000];
 
           i = 4;
           spectrumData[i] = {};
-          spectrumData[i].name = "Lithium";
-          spectrumData[i].wavelength = [468, 479, 548.4, 610.3, 670.8];
+          spectrumData[i].name = "Metals";
+          spectrumData[i].wavelength = [407.2, 408.4, 426.4, 436, 588.4];
+          spectrumData[i].alpha = [1, 5500, 1000];
 
           i = 5;
           spectrumData[i] = {};
-          spectrumData[i].name = "Neon";
-          spectrumData[i].wavelength = [540.1, 585.2, 588.2, 603, 607.4, 616.4, 621.7, 626.6, 633.4, 638.3, 640.2, 650.6, 659.9, 692.9];
-          
+          spectrumData[i].name = "Molecules";
+          spectrumData[i].wavelength = [425.2, 426.4, 461.2, 464.8, 469.6, 472, 480.4];
+          spectrumData[i].alpha = [1, 3000, 1000];
+
           // to add more elements, just copy one of the blocks from above, update i, name, and wavelengths
 
-          // set all elements to OFF for emission and absorption
+          // set all elements to OFF 
           for (var i = 0; i < spectrumData.length; i++) {
-              emissionOn[i] = 0;
-              absorptionOn[i] = 0;
+              spectrumOn[i] = 0;
+              spectrumAlpha[i] = 1;
           }
 
-          //console.log(spectrumData);
+          console.log(spectrumData);
           //console.log(emissionOn);
       }
+      
+    function initializeSpTLumTemp() {
+        // Spectral type & luminosity class temperatures from original NAAP simulation
+        sptNames = ['O0','O1','O2','O3','O4','O5','O6','O7','O8','O9','B0','B1','B2','B3','B4','B5','B6','B7','B8','B9','A0','A1','A2','A3','A4','A5','A6','A7','A8','A9','F0','F1','F2','F3','F4','F5','F6','F7','F8','F9','G0','G1','G2','G3','G4','G5','G6','G7','G8','G9','K0','K1','K2','K3','K4','K5','K6','K7','K8','K9','M0','M1','M2','M3','M4','M5','M6','M7','M8','M9'];
+        sptClassITemps = [91000,84500,78000,71500,65000,58500,52000,45500,39000,32500,26000,20700,17800,15600,13900,13400,12700,12000,11200,10500,9730,9230,9080,8890,8700,8510,8348,8186,8024,7862,7700,7435,7169,6993,6816,6640,6460,6280,6100,5805,5510,5333,5156,4980,4902,4824,4746,4668,4590,4505,4420,4330,4260,4130,3990,3850,3810,3770,3730,3690,3650,3550,3450,3200,2980,2760,2540,2320,2100,1880];
+        sptClassIIITemps = [54800,52400,50000,47600,45200,42800,40400,38000,35600,33200,29700,25600,22300,19000,17200,15400,14100,13000,11800,10700,9480,9145,8810,8593,8376,8160,8045,7930,7626,7323,7020,6885,6750,6676,6603,6530,6385,6239,6136,6033,5910,5730,5550,5370,5190,5120,5050,5005,4960,4885,4810,4610,4500,4320,4080,3980,3948,3916,3884,3852,3820,3780,3710,3630,3560,3420,3250,3080,2910,1880];
+        sptClassVTemps = [54800,52400,50000,47600,45200,42800,40400,38000,35600,33200,29700,25600,22300,19000,17200,15400,14100,13000,11800,10700,9480,9145,8810,8593,8376,8160,8045,7930,7626,7323,7020,6885,6750,6676,6603,6530,6385,6239,6136,6033,5930,5880,5830,5785,5740,5680,5620,5525,5430,5335,5240,5125,5010,4785,4560,4340,4190,4040,3960,3880,3800,3680,3530,3380,3180,3030,2850,2670,2490,1880];
+        
+        for (var i = 0; i < sptNames.length; i++) {
+            SpTLumTemp[i] = {};
+            SpTLumTemp[i].name = sptNames[i];
+            SpTLumTemp[i].I = sptClassITemps[i];
+            SpTLumTemp[i].III = sptClassIIITemps[i];
+            SpTLumTemp[i].V = sptClassVTemps[i];
+        }
+        //console.log(SpTLumTemp);
+    }
 
     function initializeDisplay() {
           // set background color for the entire thing
@@ -130,43 +187,10 @@
 
         // draw an axis
            context.beginPath();
-           context.moveTo(xBase, yVisSpec);
-           context.lineTo(xBase+600, yVisSpec);
-           context.stroke();
- 
-         // draw and label the tick marks
-
-         for (var i = 0; i <= 6; i++) {
-           context.beginPath();
-           context.moveTo(xBase+i*100, yVisSpec);
-           context.lineTo(xBase+i*100, yVisSpec+10);
-           context.stroke();
-           context.textAlign = 'center';
-           context.textBaseline = 'middle';
-           var axisValue = 400+50*i;
-           var axisLabel = axisValue.toFixed(0);
-           context.fillText(axisLabel, xBase+i*100, yVisSpec+20);
-
-          }
-           context.font = '18pt Calibri';
-           context.fillText("Wavelength (nm)", 0.5*canvas.width, yVisSpec+44);
-           context.fillText("Continuous spectrum, visible light", 0.5*canvas.width, 50);
-
-          drawVisible();
-
-          yBase = 355;
-
-          context.lineWidth = 2;
-          context.strokeStyle  = "white";
-          context.font = '14pt Calibri';
-          context.fillStyle = "white";
-
-         // draw an axis for the emission spectrum
-           context.beginPath();
            context.moveTo(xBase, yBase);
            context.lineTo(xBase+600, yBase);
            context.stroke();
-
+ 
          // draw and label the tick marks
 
          for (var i = 0; i <= 6; i++) {
@@ -183,13 +207,56 @@
           }
            context.font = '18pt Calibri';
            context.fillText("Wavelength (nm)", 0.5*canvas.width, yBase+44);
-    
+           //context.fillText("Continuous spectrum, visible light", 0.5*canvas.width, 50);
+
+          drawVisible();
 
     }
       
+      function updateSpectrum() {
+          // check to see what type of spectrum is being drawn
+          spectrumType = document.querySelector('input[name="spectrumType"]:checked').value;
+          luminosityClass = document.querySelector('input[name="luminosityClass"]:checked').value;
+          
+          // lookup spectral type label and temperature
+          i = document.getElementById('spectralTypeNum').value;
+          sptName = SpTLumTemp[i].name;
+          if (luminosityClass == 'I') {
+              temperature = SpTLumTemp[i].I;
+          } else if (luminosityClass == 'III') {
+              temperature = SpTLumTemp[i].III;
+          } else {
+              temperature = SpTLumTemp[i].V;
+          }
+          document.getElementById('SpTDisplay').value = sptName;
+          document.getElementById('classDisplay').value = luminosityClass;
+          document.getElementById('temperatureDisplay').value = temperature;
+          
+          
+          // check to see which elements are selected
+          // there's likely a better way to do this with a loop
+          if (document.getElementById("HeIIspectra").checked == true) {spectrumOn[2] = 1} else {spectrumOn[2] = 0}
+          if (document.getElementById("Hespectra").checked == true) {spectrumOn[1] = 1} else {spectrumOn[1] = 0}
+          if (document.getElementById("Hspectra").checked == true) {spectrumOn[0] = 1} else {spectrumOn[0] = 0}
+          if (document.getElementById("ZIIspectra").checked == true) {spectrumOn[3] = 1} else {spectrumOn[3] = 0}
+          if (document.getElementById("Zspectra").checked == true) {spectrumOn[4] = 1} else {spectrumOn[4] = 0}
+          if (document.getElementById("MolSpectra").checked == true) {spectrumOn[5] = 1} else {spectrumOn[5] = 0}
+          
+          // decide what kind of display to make, based on spectrumType
+          if (spectrumType == 'continuous') {
+              drawVisible();
+          } else if (spectrumType == 'emission') {
+              drawEmission();
+          } else {
+              drawVisible();
+              drawAbsorption();
+          }
+          
+      }
+      
     function drawVisible() {
         context.fillStyle = "black";
-        context.fillRect(xBase, yVisSpec,600, -80);
+        context.fillRect(xBase, yBase,600, -80);
         context.lineWidth = 1;
 
          // wavelength from 400 to 700 nm, draw the visible spectrum
@@ -198,8 +265,8 @@
            lineColor = getLineColor(wavelength);
            context.strokeStyle  = lineColor;
            context.beginPath();
-           context.moveTo(xBase+i, yVisSpec);
-           context.lineTo(xBase+i, yVisSpec-80);
+           context.moveTo(xBase+i, yBase);
+           context.lineTo(xBase+i, yBase-80);
            context.stroke();
           }
 
@@ -210,12 +277,14 @@
         context.fillStyle = "black";
         context.fillRect(xBase, yBase,600, -80);
     
-         for (var i = 0; i < emissionOn.length; i++) {
-            if (emissionOn[i] == 1) {
+         for (var i = 0; i < spectrumOn.length; i++) {
+            if (spectrumOn[i] == 1) {
                 spectrum = spectrumData[i].wavelength;
+                //console.log(spectrum);
                 for (var j = 0; j < spectrum.length; j++) {
                     context.lineWidth = 3;
                     lineColor = getLineColor(spectrum[j]);
+                    console.log(spectrum[j],lineColor);
                     context.strokeStyle  = lineColor;
                     context.beginPath();
                     context.moveTo(xBase+2*(spectrum[j]-400), yBase-2);
@@ -227,45 +296,35 @@
     }
 
     function drawAbsorption() {
-        // streamlined version of plotting code from Andrew Duffy
         
-        for (var i = 0; i < absorptionOn.length; i++) {
-            if (absorptionOn[i] == 1) {
+        context.globalAlpha = 1.0;
+        for (var i = 0; i < spectrumOn.length; i++) {
+            if (spectrumOn[i] == 1) {
+                alphaInfo = spectrumData[i].alpha;
+                //console.log(alphaInfo, temperature, (alphaInfo[1] - temperature),  Math.pow((alphaInfo[1] - temperature),2), Math.pow(alphaInfo[2],2));
+                var bTerm = (alphaInfo[1] - temperature);
+                var bTermSquared = Math.pow(bTerm);
+                var cTerm
+                var calcAlpha = Math.exp(-1.0 * Math.pow((alphaInfo[1] - temperature),2) / (2 * Math.pow(alphaInfo[2],2)));
+                //console.log(calcAlpha);
+                context.globalAlpha = calcAlpha;
+                //log.console(calcAlpha);
+                
                 spectrum = spectrumData[i].wavelength;
                 for (var j = 0; j < spectrum.length; j++) {
                     context.lineWidth = 3;
                     lineColor = "black";
                     context.strokeStyle  = lineColor;
                     context.beginPath();
-                    context.moveTo(xBase+2*(spectrum[j]-400), yVisSpec-2);
-                    context.lineTo(xBase+2*(spectrum[j]-400), yVisSpec-80);
+                    context.moveTo(xBase+2*(spectrum[j]-400), yBase-2);
+                    context.lineTo(xBase+2*(spectrum[j]-400), yBase-80);
                     context.stroke();
                 } 
             }
         }
+        context.globalAlpha = 1;
     }
-
-    function updateAbsorption() {
-        if (absorptionOn[elementChoice] == 0) {
-            absorptionOn[elementChoice] = 1;
-        } else {
-            absorptionOn[elementChoice] = 0;
-        }
-        
-        drawVisible();
-        drawAbsorption();
-    }
-        
-    function updateEmission() {
-        if (emissionOn[elementChoice] == 0) {
-            emissionOn[elementChoice] = 1;
-        } else {
-            emissionOn[elementChoice] = 0;
-        }
-        
-        drawEmission();
-    }
-      
+ 
     function getLineColor(lambda) {
         // original routine from Andrew Duffy
         var redness = 0;
@@ -290,25 +349,25 @@
 //        console.log(lambda + " " + redness + " " + greenness + " " +blueness);
         var newlineColor = "#" + redString+greenString+blueString;
         return newlineColor;
-
     }
 
   </script>
 
-   
+ 
     
 
     <div id="explanatoryText" class="bodyText">
-        <p>Based on the <a href="http://physics.bu.edu/~duffy/HTML5/emission_spectra.html">Emission Spectra</a> Javascript simulation by Andrew Duffy</p>
 
-        <p> This is a quick proof of concept of adapting Andrew Duffy's code, as a first step towards making a full blown reimplementation of the original <a href="https://astro.unl.edu/classaction/animations/light/spectrum010.html">NAAP spectrum explorer</a>.  </p>
-        
+        <p> This is an HTML5 reimplementation of the <a href="https://astro.unl.edu/classaction/animations/light/spectrum010.html">NAAP spectrum explorer</a>.  </p>
+
         <p> This simulator is part of the <a href="https://foothill.edu/astronomy/astrosims.html" target=_blank>Foothill AstroSims</a> project, which is aiming to reimplement, in HTML5, Flash-based simulations that are used in Foothill Astronomy courses, as well as developing new simulations covering topics previously unaddressed by Astro-education simulations.</p>
-    
+
+        <p>Display code (in particular, the translation from wavelength to RGB) is based on the <a href="http://physics.bu.edu/~duffy/HTML5/emission_spectra.html">Emission Spectra</a> Javascript simulation by Andrew Duffy, from his collection at <a href="https://physics.bu.edu/~duffy/sims.html">https://physics.bu.edu/~duffy/sims.html</a></p>
+
         <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="./Emission Spectra_files/88x31.png"></a>
         
         <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
     
     </div>
 
-</p></body></html>
+</body></html>
