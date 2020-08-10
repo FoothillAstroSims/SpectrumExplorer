@@ -103,6 +103,7 @@
       //console.log(spectrumType);
       
       // initialize underlying data and the display
+      elementPropertiesDisabled(true);
       starPropertiesDisabled(true);
       initializeSpectrumData();
       initializeSpTLumTemp();
@@ -255,12 +256,15 @@
           
           // decide what kind of display to make, based on spectrumType
           if (spectrumType == 'continuous') {
+              elementPropertiesDisabled(true);
               starPropertiesDisabled(true);
               drawVisible();
           } else if (spectrumType == 'emission') {
+              elementPropertiesDisabled(false);
               starPropertiesDisabled(true);
               drawEmission();
           } else {
+              elementPropertiesDisabled(false);
               starPropertiesDisabled(false);
               drawVisible();
               drawAbsorption();
@@ -268,6 +272,15 @@
           
       }
 
+    function elementPropertiesDisabled(setTo) {
+        document.getElementById("HeIIspectra").disabled = setTo;
+        document.getElementById("Hespectra").disabled = setTo;
+        document.getElementById("Hspectra").disabled = setTo;
+        document.getElementById("ZIIspectra").disabled = setTo;
+        document.getElementById("Zspectra").disabled = setTo;
+        document.getElementById("MolSpectra").disabled = setTo;
+    }
+      
     function starPropertiesDisabled(setTo) {
         document.getElementById("SpTDisplay").disabled = setTo;
         document.getElementById("classDisplay").disabled = setTo;
