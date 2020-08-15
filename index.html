@@ -69,7 +69,9 @@
             <input type=text id='SpTDisplay' value="G2">
             <input type=text id='classDisplay' value="V"><br>
             <input type=text id='temperatureDisplay' value="5830">
-            <input type="range" min="0" max="69" value="42" class="slider" id="spectralTypeNum" oninput="updateSpectrum();">
+            <input type="range" min="0" max="69" value="42" class="slider" id="spectralTypeNum" oninput="updateSpectrum();"> <br>
+            <input type="checkbox" id="showPeak" onclick=" updateSpectrum();">Show peak brightness?<br>
+
         </div>
         
     </div>
@@ -96,9 +98,11 @@
       var spectrumType = 'G2';
       var temperature = 5800;
       var luminosityClass = 'V';
+      var showPeak = false;
  
       document.getElementById("continuous").checked = true;
       spectrumType = document.querySelector('input[name="spectrumType"]:checked').value;
+      document.getElementById("showPeak").checked = false;
 
       //console.log(spectrumType);
       
@@ -166,7 +170,7 @@
               spectrumAlpha[i] = 1;
           }
 
-          console.log(spectrumData);
+          //console.log(spectrumData);
           //console.log(emissionOn);
       }
       
@@ -221,7 +225,7 @@
            context.fillText("Wavelength (nm)", 0.5*canvas.width, yBase+44);
            //context.fillText("Continuous spectrum, visible light", 0.5*canvas.width, 50);
 
-          drawVisible();
+          drawContinuous();
 
     }
       
@@ -247,18 +251,20 @@
           
           // check to see which elements are selected
           // there's likely a better way to do this with a loop
-          if (document.getElementById("HeIIspectra").checked == true) {spectrumOn[2] = 1} else {spectrumOn[2] = 0}
-          if (document.getElementById("Hespectra").checked == true) {spectrumOn[1] = 1} else {spectrumOn[1] = 0}
-          if (document.getElementById("Hspectra").checked == true) {spectrumOn[0] = 1} else {spectrumOn[0] = 0}
-          if (document.getElementById("ZIIspectra").checked == true) {spectrumOn[3] = 1} else {spectrumOn[3] = 0}
-          if (document.getElementById("Zspectra").checked == true) {spectrumOn[4] = 1} else {spectrumOn[4] = 0}
-          if (document.getElementById("MolSpectra").checked == true) {spectrumOn[5] = 1} else {spectrumOn[5] = 0}
+          if (document.getElementById("HeIIspectra").checked == true) {spectrumOn[2] = 1} else {spectrumOn[2] = 0};
+          if (document.getElementById("Hespectra").checked == true) {spectrumOn[1] = 1} else {spectrumOn[1] = 0};
+          if (document.getElementById("Hspectra").checked == true) {spectrumOn[0] = 1} else {spectrumOn[0] = 0};
+          if (document.getElementById("ZIIspectra").checked == true) {spectrumOn[3] = 1} else {spectrumOn[3] = 0};
+          if (document.getElementById("Zspectra").checked == true) {spectrumOn[4] = 1} else {spectrumOn[4] = 0};
+          if (document.getElementById("MolSpectra").checked == true) {spectrumOn[5] = 1} else {spectrumOn[5] = 0};
           
+          if (document.getElementById("showPeak").checked == true) {showPeak = 1} else {showPeak = 0};
+
           // decide what kind of display to make, based on spectrumType
           if (spectrumType == 'continuous') {
               elementPropertiesDisabled(true);
-              starPropertiesDisabled(true);
-              drawVisible();
+              starPropertiesDisabled(false);
+              drawContinuous();
           } else if (spectrumType == 'emission') {
               elementPropertiesDisabled(false);
               starPropertiesDisabled(true);
@@ -266,10 +272,9 @@
           } else {
               elementPropertiesDisabled(false);
               starPropertiesDisabled(false);
-              drawVisible();
+              drawContinuous();
               drawAbsorption();
           }
-          
       }
 
     function elementPropertiesDisabled(setTo) {
@@ -289,9 +294,10 @@
         document.getElementById("classI").disabled = setTo;
         document.getElementById("classIII").disabled = setTo;
         document.getElementById("classV").disabled = setTo;
+        document.getElementById("showPeak").disabled = setTo;
     }
       
-    function drawVisible() {
+    function drawContinuous() {
         context.fillStyle = "black";
         context.fillRect(xBase-2, yBase,604, -80);
         context.lineWidth = 1;
@@ -299,14 +305,21 @@
          // wavelength from 400 to 700 nm, draw the visible spectrum
          for (var i = 0; i <= 600; i++) {
            var wavelength = 400 + 0.5*i;
-           lineColor = getLineColor(wavelength);
+           if (showPeak == 0) {
+               lineColor = getLineColor(wavelength);
+           } else {
+               var peakWavelength = thermalPeak(temperature);
+               relativeIntensity = Math.max((1 + (-1)*(Math.abs(wavelength - peakWavelength) / 200)),0.65);
+               lineColor = getLineColor(wavelength, relativeIntensity);
+           }
+           
+           //console.log(wavelength, lineColor);
            context.strokeStyle  = lineColor;
            context.beginPath();
            context.moveTo(xBase+i, yBase);
            context.lineTo(xBase+i, yBase-80);
            context.stroke();
           }
-
     }
       
     function drawEmission() {
@@ -321,7 +334,7 @@
                 for (var j = 0; j < spectrum.length; j++) {
                     context.lineWidth = 3;
                     lineColor = getLineColor(spectrum[j]);
-                    console.log(spectrum[j],lineColor);
+                    //console.log(spectrum[j],lineColor);
                     context.strokeStyle  = lineColor;
                     context.beginPath();
                     context.moveTo(xBase+2*(spectrum[j]-400), yBase-2);
@@ -374,30 +387,41 @@
         context.globalAlpha = 1;
     }
  
-    function getLineColor(lambda) {
+    function getLineColor(lambda, relativeIntensity=1) {
         // original routine from Andrew Duffy
+        
         var redness = 0;
         if (lambda <= 500) redness = Math.floor(160-160*(lambda-400)/100);
         if ((lambda >= 558) && (lambda < 590))redness = Math.floor(255-255*(590-lambda)*(590-lambda)/(32*32));
         if (lambda >= 590) redness = 255;
         if (lambda >= 650) redness = Math.floor(255-2*(lambda-650));
-
+        redness = Math.floor(relativeIntensity * redness);
         var redString = redness.toString(16);
         if (redString.length == 1) redString = "0"+redString;
+
         var greenness = 0;
         if ((lambda > 460) && (lambda < 500)) greenness = Math.floor(255 - 255*(500 - lambda)*(500-lambda)/1600);
         if ((lambda >= 500) && (lambda <=  570))    greenness = 255;
         if ((lambda > 570) && (lambda <=  640))    greenness = Math.floor(255-255*(lambda-570)*(lambda-570)/(70*70));
+        greenness = Math.floor(relativeIntensity * greenness);
         var greenString = greenness.toString(16);
         if (greenString.length == 1) greenString = "0"+greenString;
+
         var blueness = 0;
         if (lambda < 460) blueness = 255;
         if ((lambda >= 460) && (lambda < 550)) blueness = Math.floor(255 - 255*(lambda-460)*(lambda-460)/(90*90));
+        blueness = Math.floor(relativeIntensity * blueness);
         var blueString = blueness.toString(16);
         if (blueString.length == 1) blueString = "0"+blueString;
 //        console.log(lambda + " " + redness + " " + greenness + " " +blueness);
+
         var newlineColor = "#" + redString+greenString+blueString;
         return newlineColor;
+    }
+      
+    function thermalPeak(temperature) {
+        // Wien's displacement law
+        return 2897772.0 / temperature;
     }
 
   </script>
