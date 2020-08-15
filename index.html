@@ -293,7 +293,7 @@
       
     function drawVisible() {
         context.fillStyle = "black";
-        context.fillRect(xBase, yBase,600, -80);
+        context.fillRect(xBase-2, yBase,604, -80);
         context.lineWidth = 1;
 
          // wavelength from 400 to 700 nm, draw the visible spectrum
@@ -312,7 +312,7 @@
     function drawEmission() {
         
         context.fillStyle = "black";
-        context.fillRect(xBase, yBase,600, -80);
+        context.fillRect(xBase-2, yBase,604, -80);
     
          for (var i = 0; i < spectrumOn.length; i++) {
             if (spectrumOn[i] == 1) {
